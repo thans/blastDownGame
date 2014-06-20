@@ -5,16 +5,17 @@ game.Ship = me.ObjectEntity.extend({
         // call the constructor
         this.parent(x, y, settings);
         this.gravity = 0.0;
-        // set the walking & jumping speed
+        // set the movement speed
         this.setVelocity(0, 0);
-        // this.startY = y + 32;
-        // this.endY = 0;
+
         this.numSteps = 0;
         this.moveRight = true;
+        this.collidable = true;
+        this.type = game.ENEMY_ENTITY;
     },
 
-    // TODO move left and right
     update: function() {
+        // simple movement pattern
     	if (this.numSteps % 3 == 0) {
     		if (this.numSteps % (96 * 2) == 0) {
     			this.moveRight = !this.moveRight;

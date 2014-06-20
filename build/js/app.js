@@ -424,6 +424,8 @@ var game = {
 			});
 		}
 
+		me.sys.fps = 30; // probably okay
+
 		// Initialize the audio.
 		me.audio.init("mp3,ogg");
 
@@ -443,7 +445,8 @@ var game = {
 		me.state.set(me.state.PLAY, new game.PlayScreen());
 
 		me.pool.register("mainPlayer", game.PlayerEntity);
-		me.pool.register("bullet", game.BulletEntity, false);
+		// TODO object POOLING?
+		
 		// TODO temporary.  enable keyboard
 		me.input.bindKey(me.input.KEY.LEFT,  "left");
    		me.input.bindKey(me.input.KEY.RIGHT, "right");
@@ -460,10 +463,10 @@ game.resources = [
 	{name: "player", type: "image", src: "data/img/player_ship.png"},
 
 	// ships
-	{name: "xlarge", type: "image", src: "data/img/x_large_ship.png"}, // 320 x 160
+	{name: "xlarge", type: "image", src: "data/img/xlarge_ship.png"},  // 320 x 160
 	{name: "large",  type: "image", src: "data/img/large_ship.png"},   // 64x64
 	{name: "medium", type: "image", src: "data/img/medium_ship.png"},  // 32x32
-	{name: "small",  type: "image", src: "data/img/small_ship.png"},    // 16x16
+	{name: "small",  type: "image", src: "data/img/small_ship.png"},   // 16x16
 
 	//bullet
 	{name: "bullet", type: "image", src: "data/img/bullet_sprite.png"},
@@ -553,6 +556,52 @@ game.HUD.ScoreItem = me.Renderable.extend({
 
 });
 
+game.Mothership = me.ObjectEntity.extend({
+	// constructor
+	init: function(x, y, settings) {
+        // call the constructor
+        this.parent(x, y, settings);
+        this.gravity = 0.0;
+        // set the walking & jumping speed
+        this.setVelocity(0, 0);
+        // this.startY = y + 32;
+        // this.endY = 0;
+    },
+
+    // TODO move left and right
+});
+game.Ship = me.ObjectEntity.extend({
+	// constructor
+	// pass the correct image, width/height and x, y for any type of ship that moves in the same pattern
+	init: function(x, y, settings) {
+        // call the constructor
+        this.parent(x, y, settings);
+        this.gravity = 0.0;
+        // set the walking & jumping speed
+        this.setVelocity(0, 0);
+        // this.startY = y + 32;
+        // this.endY = 0;
+        this.numSteps = 0;
+        this.moveRight = true;
+    },
+
+    // TODO move left and right
+    update: function() {
+    	if (this.numSteps % 3 == 0) {
+    		if (this.numSteps % (96 * 2) == 0) {
+    			this.moveRight = !this.moveRight;
+    			this.numSteps = 0;
+    		}
+    		
+    		if (this.moveRight) {
+	    		this.pos.x -= 1;
+	    	} else {
+	    		this.pos.x += 1;
+	    	}
+    	}
+    	this.numSteps++;
+    }
+});
 game.BulletEntity = me.ObjectEntity.extend({
 
 	// constructor
@@ -621,7 +670,7 @@ game.PlayerEntity = me.ObjectEntity.extend({
 
     // update position
     update: function(dt) {
-    	console.log('update');
+    	//console.log('update');
         if (me.input.isKeyPressed('left')) {
             this.vel.x -= this.accel.x * me.timer.tick;
         } else if (me.input.isKeyPressed('right')) {
@@ -630,11 +679,19 @@ game.PlayerEntity = me.ObjectEntity.extend({
             this.vel.x = 0;
         }
 
+
         if (me.input.isKeyPressed('shoot')) {
     		console.log('this', this);
-    		var shot = new game.BulletEntity(this.x, this.y, {image: "test", z: this.z+1, height: 16, width: 16, spritewidth: 16, spriteheight: 16}); 
+    		var shot = new game.BulletEntity(this.pos.x, this.pos.y, {
+                height: 16,
+                image: "test",
+                name: "shot",
+                spriteheight: 16,
+                spritewidth: 32,
+                width: 16
+            });
 
-			me.game.world.addChild(shot);
+            me.game.world.addChild(shot, 9);
     	}
 
         // check & update player movement
@@ -647,10 +704,10 @@ game.PlayerEntity = me.ObjectEntity.extend({
             return true;
         }
         
-        console.log("returning");
+        //console.log("returning");
         // else inform the engine we did not perform
         // any update (e.g. position, animation)
-        return false;
+        return true;
     }
 
 });
@@ -660,11 +717,94 @@ game.PlayScreen = me.ScreenObject.extend({
 	 */
 	onResetEvent: function() {
 		// load a level
+		var PADDING = 32;
+		var WIDTH = 960 - (PADDING * 2);
         me.levelDirector.loadLevel("area51");
 
         // reset the score
 		game.data.score = 0;
 
+		var zAxis = 8;
+
+		// TODO object pooling? https://github.com/melonjs/melonJS/wiki/Frequently-Asked-Questions
+		// TODO keep track of all of these for removal purposes?
+		/*
+		 * Draw the Mothership
+		 */
+		var mothership = new game.Ship(320 - PADDING, 32, {
+			height: 160,
+			image: "xlarge",
+			name: "mothership",
+			spriteheight: 160,
+			spritewidth: 320,
+			width: 320,
+			z: zAxis
+		});
+
+		me.game.world.addChild(mothership, zAxis);
+		zAxis++;
+		var numFeatures = 6;
+		var sectionWidth = WIDTH/numFeatures;
+		var elWidth = 64; // width and height are the same
+		
+		for (var i = 0; i < numFeatures; i++) {
+			var featureShip = new game.Ship((i * sectionWidth) + ((sectionWidth - elWidth) / 2), 32 + 160, {
+				height: elWidth,
+				image: "large",
+				name: "feature" + i,
+				spriteheight: elWidth,
+				spritewidth: elWidth,
+				width: elWidth,
+				z: zAxis
+			});
+
+			me.game.world.addChild(featureShip, zAxis++);
+		}
+
+		zAxis++;
+
+
+		var numStories = 3 * numFeatures;
+		sectionWidth = WIDTH / numStories;
+		elWidth = 32;
+		
+		for (var i = 0; i < numStories; i++) {
+			var storyShip = new game.Ship((i * sectionWidth) + ((sectionWidth - elWidth) / 2), 32 + 160 + 64 + 32, {
+				height: elWidth,
+				image: "medium",
+				name: "story" + i,
+				spriteheight: elWidth,
+				spritewidth: elWidth,
+				width: elWidth,
+				z: zAxis
+			});
+
+			me.game.world.addChild(storyShip, zAxis++);
+
+			// TODO - add as many features as are associated with this story!
+		}
+
+		zAxis++;
+
+		var numTasks = 2 * numStories;
+		sectionWidth = WIDTH / numTasks;
+		elWidth = 16;
+		
+		for (var i = 0; i < numTasks; i++) {
+			var storyShip = new game.Ship((i * sectionWidth) + ((sectionWidth - elWidth) / 2), 32 + 160 + 64 + 32 + 32 + 32, {
+				height: elWidth,
+				image: "small",
+				name: "task" + i,
+				spriteheight: elWidth,
+				spritewidth: elWidth,
+				width: elWidth,
+				z: zAxis
+			});
+
+			me.game.world.addChild(storyShip, zAxis++);
+		}
+
+		zAxis++;
 
 	},
 

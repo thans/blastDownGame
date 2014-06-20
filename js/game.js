@@ -1,6 +1,10 @@
 /* Game namespace */
 var game = {
 
+	ENEMY_ENTITY: 99,
+	PLAYER: 88,
+	BULLET: 77,
+	AMMUNITION: 5,
 	// an object where to store game information
 	data : {
 		// score
@@ -23,6 +27,8 @@ var game = {
 			});
 		}
 
+		//me.sys.fps = 30; // probably okay
+
 		// Initialize the audio.
 		me.audio.init("mp3,ogg");
 
@@ -42,9 +48,10 @@ var game = {
 		me.state.set(me.state.PLAY, new game.PlayScreen());
 
 		me.pool.register("mainPlayer", game.PlayerEntity);
-		me.pool.register("bullet", game.BulletEntity, false);
+		me.pool.register("bullet", game.BulletEntity);
+		// TODO object POOLING?
 		
-		// TODO temporary.  enable keyboard
+		// TODO temporary enabling keyboard
 		me.input.bindKey(me.input.KEY.LEFT,  "left");
    		me.input.bindKey(me.input.KEY.RIGHT, "right");
    		me.input.bindKey(me.input.KEY.SPACE, "shoot");

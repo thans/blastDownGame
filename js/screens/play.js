@@ -13,7 +13,8 @@ game.PlayScreen = me.ScreenObject.extend({
 
 		var zAxis = 8;
 
-
+		// TODO object pooling? https://github.com/melonjs/melonJS/wiki/Frequently-Asked-Questions
+		// TODO keep track of all of these for removal purposes?
 		/*
 		 * Draw the Mothership
 		 */
@@ -24,7 +25,8 @@ game.PlayScreen = me.ScreenObject.extend({
 			spriteheight: 160,
 			spritewidth: 320,
 			width: 320,
-			z: zAxis
+			z: zAxis,
+			health: 100
 		});
 
 		me.game.world.addChild(mothership, zAxis);
@@ -41,7 +43,8 @@ game.PlayScreen = me.ScreenObject.extend({
 				spriteheight: elWidth,
 				spritewidth: elWidth,
 				width: elWidth,
-				z: zAxis
+				z: zAxis,
+				health: 3
 			});
 
 			me.game.world.addChild(featureShip, zAxis++);
@@ -49,8 +52,7 @@ game.PlayScreen = me.ScreenObject.extend({
 
 		zAxis++;
 
-
-		var numStories = 4 * numFeatures;
+		var numStories = 3 * numFeatures;
 		sectionWidth = WIDTH / numStories;
 		elWidth = 32;
 		
@@ -62,7 +64,8 @@ game.PlayScreen = me.ScreenObject.extend({
 				spriteheight: elWidth,
 				spritewidth: elWidth,
 				width: elWidth,
-				z: zAxis
+				z: zAxis,
+				health: 2
 			});
 
 			me.game.world.addChild(storyShip, zAxis++);
@@ -80,11 +83,12 @@ game.PlayScreen = me.ScreenObject.extend({
 			var storyShip = new game.Ship((i * sectionWidth) + ((sectionWidth - elWidth) / 2), 32 + 160 + 64 + 32 + 32 + 32, {
 				height: elWidth,
 				image: "small",
-				name: "story" + i,
+				name: "task" + i,
 				spriteheight: elWidth,
 				spritewidth: elWidth,
 				width: elWidth,
-				z: zAxis
+				z: zAxis,
+				health: 1
 			});
 
 			me.game.world.addChild(storyShip, zAxis++);

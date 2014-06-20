@@ -20,13 +20,4 @@
    </properties>
   </object>
  </objectgroup>
- <objectgroup name="bulletEntities" width="60" height="40">
-  <object name="bullet" x="619" y="590" width="28" height="20">
-   <properties>
-    <property name="image" value="test"/>
-    <property name="spriteheight" value="16"/>
-    <property name="spritewidth" value="16"/>
-   </properties>
-  </object>
- </objectgroup>
 </map>
