@@ -11,6 +11,7 @@ game.PlayerEntity = me.ObjectEntity.extend({
         this.movesUntilShoot = 0;
         // set the default horizontal & vertical speed (accel vector)
         this.setVelocity(5, 0);
+        this.shootLeft = false;
     },
 
     // update position
@@ -24,8 +25,10 @@ game.PlayerEntity = me.ObjectEntity.extend({
         }
         this.movesUntilShoot--;
 
-        if (this.movesUntilShoot < 0 && me.input.isKeyPressed('shoot') && game.AMMUNITION > 0) {
-    		var shot = me.pool.pull('bullet', this.pos.x, this.pos.y, {
+        if (this.movesUntilShoot < 0 && me.input.isKeyPressed('shoot')) {
+            var x = this.shootLeft ? this.pos.x : this.pos.x + 16;
+            console.log(x);
+    		var shot = me.pool.pull('bullet', x, this.pos.y, {
                 height: 16,
                 image: "bullet",
                 name: "shot",
@@ -33,9 +36,8 @@ game.PlayerEntity = me.ObjectEntity.extend({
                 spritewidth: 16,
                 width: 16
             });
-            game.AMMUNITION--;
-            this.movesUntilShoot = 5; // 5 updates befre you can shoot again
-
+            this.movesUntilShoot = 15; // 10 updates befre you can shoot again
+            this.shootLeft = !this.shootLeft;
             me.game.world.addChild(shot, Number.POSITIVE_INFINITY);
     	}
 

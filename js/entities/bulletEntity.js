@@ -14,7 +14,6 @@ game.BulletEntity = me.ObjectEntity.extend({
         // did we hit the top wall?
         if (this.pos.y < 16) {
             me.game.world.removeChild(this);
-            game.AMMUNITION++;
         }
 
         // did we hit an enemy?
@@ -23,7 +22,6 @@ game.BulletEntity = me.ObjectEntity.extend({
             if (res.obj.type == game.ENEMY_ENTITY) {
                 me.game.world.removeChild(this);
                 me.game.world.removeChild(res.obj);
-                game.AMMUNITION++;
             }
         }
 

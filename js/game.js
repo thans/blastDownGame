@@ -4,7 +4,6 @@ var game = {
 	ENEMY_ENTITY: 99,
 	PLAYER: 88,
 	BULLET: 77,
-	AMMUNITION: 5,
 	// an object where to store game information
 	data : {
 		// score
