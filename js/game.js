@@ -49,6 +49,8 @@ var game = {
 
 		me.pool.register("mainPlayer", game.PlayerEntity);
 		me.pool.register("bullet", game.BulletEntity);
+		me.pool.register("enemyShip", game.Ship);
+
 		// TODO object POOLING?
 		
 		// TODO temporary enabling keyboard

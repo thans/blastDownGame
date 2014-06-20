@@ -21,7 +21,6 @@ game.BulletEntity = me.ObjectEntity.extend({
         var res = me.game.world.collide(this);
         if (res) {
             if (res.obj.type == game.ENEMY_ENTITY) {
-                console.log("bullet hit enemy");
                 me.game.world.removeChild(this);
                 me.game.world.removeChild(res.obj);
                 game.AMMUNITION++;

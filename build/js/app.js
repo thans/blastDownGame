@@ -402,6 +402,10 @@
 /* Game namespace */
 var game = {
 
+	ENEMY_ENTITY: 99,
+	PLAYER: 88,
+	BULLET: 77,
+	AMMUNITION: 5,
 	// an object where to store game information
 	data : {
 		// score
@@ -424,7 +428,7 @@ var game = {
 			});
 		}
 
-		me.sys.fps = 30; // probably okay
+		//me.sys.fps = 30; // probably okay
 
 		// Initialize the audio.
 		me.audio.init("mp3,ogg");
@@ -445,9 +449,12 @@ var game = {
 		me.state.set(me.state.PLAY, new game.PlayScreen());
 
 		me.pool.register("mainPlayer", game.PlayerEntity);
+		me.pool.register("bullet", game.BulletEntity);
+		me.pool.register("enemyShip", game.Ship);
+
 		// TODO object POOLING?
 		
-		// TODO temporary.  enable keyboard
+		// TODO temporary enabling keyboard
 		me.input.bindKey(me.input.KEY.LEFT,  "left");
    		me.input.bindKey(me.input.KEY.RIGHT, "right");
    		me.input.bindKey(me.input.KEY.SPACE, "shoot");
@@ -556,19 +563,94 @@ game.HUD.ScoreItem = me.Renderable.extend({
 
 });
 
-game.Mothership = me.ObjectEntity.extend({
+game.BulletEntity = me.ObjectEntity.extend({
+
 	// constructor
 	init: function(x, y, settings) {
         // call the constructor
         this.parent(x, y, settings);
         this.gravity = 0.0;
-        // set the walking & jumping speed
-        this.setVelocity(0, 0);
-        // this.startY = y + 32;
-        // this.endY = 0;
+        // set the movement speed
+        this.setVelocity(0, 8);
+        this.type = game.BULLET;
     },
 
-    // TODO move left and right
+	update: function() {
+        // did we hit the top wall?
+        if (this.pos.y < 16) {
+            me.game.world.removeChild(this);
+            game.AMMUNITION++;
+        }
+
+        // did we hit an enemy?
+        var res = me.game.world.collide(this);
+        if (res) {
+            if (res.obj.type == game.ENEMY_ENTITY) {
+                me.game.world.removeChild(this);
+                me.game.world.removeChild(res.obj);
+                game.AMMUNITION++;
+            }
+        }
+
+        // keep going
+        this.vel.y -= this.accel.y * me.timer.tick;
+        this.updateMovement();
+        return true;
+      }
+});
+game.PlayerEntity = me.ObjectEntity.extend({
+
+	// constructor
+	init: function(x, y, settings) {
+        // call the constructor
+        this.parent(x, y, settings);
+        console.log(settings);
+        console.log(this);
+        this.gravity = 0.0;
+        this.type = game.PLAYER;
+        this.movesUntilShoot = 0;
+        // set the default horizontal & vertical speed (accel vector)
+        this.setVelocity(5, 0);
+    },
+
+    // update position
+    update: function(dt) {
+        if (me.input.isKeyPressed('left')) {
+            this.vel.x -= this.accel.x * me.timer.tick;
+        } else if (me.input.isKeyPressed('right')) {
+            this.vel.x += this.accel.x * me.timer.tick;
+        } else {
+            this.vel.x = 0;
+        }
+        this.movesUntilShoot--;
+
+        if (this.movesUntilShoot < 0 && me.input.isKeyPressed('shoot') && game.AMMUNITION > 0) {
+    		var shot = me.pool.pull('bullet', this.pos.x, this.pos.y, {
+                height: 16,
+                image: "bullet",
+                name: "shot",
+                spriteheight: 16,
+                spritewidth: 16,
+                width: 16
+            });
+            game.AMMUNITION--;
+            this.movesUntilShoot = 5; // 5 updates befre you can shoot again
+
+            me.game.world.addChild(shot, Number.POSITIVE_INFINITY);
+    	}
+
+        // check & update player movement
+        this.updateMovement();
+
+        // update animation if necessary
+        if (this.vel.x != 0 || this.vel.y != 0) {
+            // update object animation
+            this.parent(dt);
+            return true;
+        }
+        return true;
+    }
+
 });
 game.Ship = me.ObjectEntity.extend({
 	// constructor
@@ -577,16 +659,17 @@ game.Ship = me.ObjectEntity.extend({
         // call the constructor
         this.parent(x, y, settings);
         this.gravity = 0.0;
-        // set the walking & jumping speed
+        // set the movement speed
         this.setVelocity(0, 0);
-        // this.startY = y + 32;
-        // this.endY = 0;
+
         this.numSteps = 0;
         this.moveRight = true;
+        this.collidable = true;
+        this.type = game.ENEMY_ENTITY;
     },
 
-    // TODO move left and right
     update: function() {
+        // simple movement pattern
     	if (this.numSteps % 3 == 0) {
     		if (this.numSteps % (96 * 2) == 0) {
     			this.moveRight = !this.moveRight;
@@ -602,123 +685,36 @@ game.Ship = me.ObjectEntity.extend({
     	this.numSteps++;
     }
 });
-game.BulletEntity = me.ObjectEntity.extend({
-
-	// constructor
-	init: function(x, y, settings) {
-        // call the constructor
-        this.parent(x, y, settings);
-        this.gravity = 0.0;
-        // set the walking & jumping speed
-        this.setVelocity(0, 8);
-        // this.startY = y + 32;
-        // this.endY = 0;
-    },
-
-	update: function() {
-		if (this.pos.y < 16) {
-			me.game.world.removeChild(this);
-		}
-        this.flipX(this.left);
-        this.vel.y -= this.accel.y * me.timer.tick;
-        this.updateMovement();
-        return true;
-      }
-    // // update position
-    // update: function(dt) {
-
-    // 	if (me.input.isKeyPressed('shoot')) {
-    // 		// shoot!
-    // 	}
-
-    //     if (me.input.isKeyPressed('left')) {
-    //         this.vel.x -= this.accel.x * me.timer.tick;
-    //     } else if (me.input.isKeyPressed('right')) {
-    //         this.vel.x += this.accel.x * me.timer.tick;
-    //     } else {
-    //         this.vel.x = 0;
-    //     }
-
-    //     // check & update player movement
-    //     this.updateMovement();
-
-    //     // update animation if necessary
-    //     if (this.vel.x != 0 || this.vel.y != 0) {
-    //         // update object animation
-    //         this.parent(dt);
-    //         return true;
-    //     }
-        
-    //     // else inform the engine we did not perform
-    //     // any update (e.g. position, animation)
-    //     return false;
-    // }
-});
-game.PlayerEntity = me.ObjectEntity.extend({
-
-	// constructor
-	init: function(x, y, settings) {
-        // call the constructor
-        this.parent(x, y, settings);
-        console.log(settings);
-        console.log(this);
-        this.gravity = 0.0;
-
-        // set the default horizontal & vertical speed (accel vector)
-        this.setVelocity(5, 0);
-    },
-
-    // update position
-    update: function(dt) {
-    	//console.log('update');
-        if (me.input.isKeyPressed('left')) {
-            this.vel.x -= this.accel.x * me.timer.tick;
-        } else if (me.input.isKeyPressed('right')) {
-            this.vel.x += this.accel.x * me.timer.tick;
-        } else {
-            this.vel.x = 0;
-        }
-
-
-        if (me.input.isKeyPressed('shoot')) {
-    		console.log('this', this);
-    		var shot = new game.BulletEntity(this.pos.x, this.pos.y, {
-                height: 16,
-                image: "test",
-                name: "shot",
-                spriteheight: 16,
-                spritewidth: 32,
-                width: 16
-            });
-
-            me.game.world.addChild(shot, 9);
-    	}
-
-        // check & update player movement
-        this.updateMovement();
-
-        // update animation if necessary
-        if (this.vel.x != 0 || this.vel.y != 0) {
-            // update object animation
-            this.parent(dt);
-            return true;
-        }
-        
-        //console.log("returning");
-        // else inform the engine we did not perform
-        // any update (e.g. position, animation)
-        return true;
-    }
-
-});
 game.PlayScreen = me.ScreenObject.extend({
 	/**
 	 *  action to perform on state change
 	 */
 	onResetEvent: function() {
 		// load a level
+		var CANVAS_WIDTH = 960;
 		var PADDING = 32;
-		var WIDTH = 960 - (PADDING * 2);
+		var WIDTH = CANVAS_WIDTH - (PADDING * 2);
+
+		var MOTHERSHIP = {
+			width: 320,
+			height: 160
+		};
+
+		var FEATURE_SHIP = {
+			width: 64,
+			height: 64
+		};
+
+		var STORY_SHIP = {
+			width: 32,
+			height: 32
+		};
+
+		var TASK_SHIP = {
+			width: 16,
+			height: 16
+		};
+
         me.levelDirector.loadLevel("area51");
 
         // reset the score
@@ -731,13 +727,13 @@ game.PlayScreen = me.ScreenObject.extend({
 		/*
 		 * Draw the Mothership
 		 */
-		var mothership = new game.Ship(320 - PADDING, 32, {
-			height: 160,
+		var mothership = me.pool.pull("enemyShip", 320 - PADDING, 32, {
+			height: MOTHERSHIP.height,
 			image: "xlarge",
 			name: "mothership",
-			spriteheight: 160,
-			spritewidth: 320,
-			width: 320,
+			spriteheight: MOTHERSHIP.height,
+			spritewidth: MOTHERSHIP.width,
+			width: MOTHERSHIP.width,
 			z: zAxis
 		});
 
@@ -745,66 +741,80 @@ game.PlayScreen = me.ScreenObject.extend({
 		zAxis++;
 		var numFeatures = 6;
 		var sectionWidth = WIDTH/numFeatures;
-		var elWidth = 64; // width and height are the same
+		console.log("section width " + sectionWidth);
 		
 		for (var i = 0; i < numFeatures; i++) {
-			var featureShip = new game.Ship((i * sectionWidth) + ((sectionWidth - elWidth) / 2), 32 + 160, {
-				height: elWidth,
+			var xPosition = (i * sectionWidth) + ((sectionWidth - FEATURE_SHIP.width) / 2);
+			var yPosition = 32 + 160;
+			var featureShip = me.pool.pull("enemyShip", xPosition, yPosition, {
+				height: FEATURE_SHIP.height,
 				image: "large",
 				name: "feature" + i,
-				spriteheight: elWidth,
-				spritewidth: elWidth,
-				width: elWidth,
+				spriteheight: FEATURE_SHIP.height,
+				spritewidth: FEATURE_SHIP.width,
+				width: FEATURE_SHIP.width,
 				z: zAxis
 			});
 
 			me.game.world.addChild(featureShip, zAxis++);
+			var numStories = Math.floor(Math.random() * 7 + 1);
+			var storySectionWidth = Math.floor(sectionWidth / numStories);
+
+			for (var j = 0; j < numStories; j++) {
+				var storyX, storyY;
+				var storiesPerLine = Math.floor(sectionWidth / STORY_SHIP.width);
+				storyY = 32 + 160 + 64 + 32 + Math.floor(j / storiesPerLine) * (STORY_SHIP.height);
+				storyX = (i * sectionWidth) + ((j % storiesPerLine) * STORY_SHIP.width - (STORY_SHIP.WIDTH / 2));
+				// if (sectionWidth < numStories * STORY_SHIP.width) {
+				// 	// going to have to spread out vertically as well
+
+				// }
+				// (j * sectionWidth) + ((sectionWidth - STORY_SHIP.width) / 2), 32 + 160 + 64 + 32
+				var storyShip = me.pool.pull("enemyShip", storyX, storyY, {
+					height: STORY_SHIP.height,
+					image: "medium",
+					name: "story" + j,
+					spriteheight: STORY_SHIP.height,
+					spritewidth: STORY_SHIP.width,
+					width: STORY_SHIP.width,
+					z: zAxis,
+					health: 2
+				});
+
+				me.game.world.addChild(storyShip, zAxis++);
+			}
 		}
 
 		zAxis++;
 
-
+ /*
 		var numStories = 3 * numFeatures;
 		sectionWidth = WIDTH / numStories;
-		elWidth = 32;
 		
-		for (var i = 0; i < numStories; i++) {
-			var storyShip = new game.Ship((i * sectionWidth) + ((sectionWidth - elWidth) / 2), 32 + 160 + 64 + 32, {
-				height: elWidth,
-				image: "medium",
-				name: "story" + i,
-				spriteheight: elWidth,
-				spritewidth: elWidth,
-				width: elWidth,
-				z: zAxis
-			});
-
-			me.game.world.addChild(storyShip, zAxis++);
-
-			// TODO - add as many features as are associated with this story!
-		}
+		
 
 		zAxis++;
 
 		var numTasks = 2 * numStories;
 		sectionWidth = WIDTH / numTasks;
-		elWidth = 16;
 		
 		for (var i = 0; i < numTasks; i++) {
-			var storyShip = new game.Ship((i * sectionWidth) + ((sectionWidth - elWidth) / 2), 32 + 160 + 64 + 32 + 32 + 32, {
-				height: elWidth,
+			var storyShip = me.pool.pull("enemyShip", (i * sectionWidth) + ((sectionWidth - TASK_SHIP.width) / 2), 32 + 160 + 64 + 32 + 32 + 32, {
+				height: TASK_SHIP.height,
 				image: "small",
 				name: "task" + i,
-				spriteheight: elWidth,
-				spritewidth: elWidth,
-				width: elWidth,
-				z: zAxis
+				spriteheight: TASK_SHIP.height,
+				spritewidth: TASK_SHIP.width,
+				width: TASK_SHIP.width,
+				z: zAxis,
+				health: 1
 			});
 
 			me.game.world.addChild(storyShip, zAxis++);
 		}
 
 		zAxis++;
+		*/
 
 	},
 
