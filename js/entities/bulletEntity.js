@@ -21,6 +21,18 @@ game.BulletEntity = me.ObjectEntity.extend({
         if (res) {
             if (res.obj.type == game.ENEMY_ENTITY) {
                 me.game.world.removeChild(this);
+                
+                console.log(res.obj);
+                var explosion = me.pool.pull("explosion", res.obj.pos.x, res.obj.pos.y, {
+                    image: "explosion",
+                    width: 32,
+                    height: 32,
+                    spritewidth: 32,
+                    spriteheight: 32,
+                    name: "explosion-" + res.obj.name
+                });
+                me.game.world.addChild(explosion, res.obj.z + 1);
+                
                 me.game.world.removeChild(res.obj);
             }
         }

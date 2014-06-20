@@ -4,6 +4,7 @@ var game = {
 	ENEMY_ENTITY: 99,
 	PLAYER: 88,
 	BULLET: 77,
+  EXPLOSION: 66,
 	// an object where to store game information
 	data : {
 		// score
@@ -12,7 +13,7 @@ var game = {
 	
 	
 	// Run on page load.
-	"onload" : function () {
+"onload" : function () {
 		// Initialize the video.
 		if (!me.video.init("screen", 960, 640, true, 'auto')) {
 			alert("Your browser does not support HTML5 canvas.");
@@ -30,7 +31,7 @@ var game = {
 
 		// Initialize the audio.
 		me.audio.init("mp3,ogg");
-
+ 
 		// Set a callback to run when loading is complete.
 		me.loader.onload = this.loaded.bind(this);
 
@@ -49,7 +50,7 @@ var game = {
 		me.pool.register("mainPlayer", game.PlayerEntity);
 		me.pool.register("bullet", game.BulletEntity);
 		me.pool.register("enemyShip", game.Ship);
-
+    me.pool.register("explosion", game.ExplosionEntity);
 		// TODO object POOLING?
 		
 		// TODO temporary enabling keyboard

@@ -12,6 +12,8 @@ game.resources = [
 	//bullet
 	{name: "bullet", type: "image", src: "data/img/bullet_sprite.png"},
 
+  {name: "explosion", type:"image", src: "data/img/animations/explosionLarge.png"},
+
 	/***********
 	 *   Maps  *
 	 ***********/
