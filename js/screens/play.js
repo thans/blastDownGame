@@ -52,7 +52,7 @@ game.PlayScreen = me.ScreenObject.extend({
 
 		me.game.world.addChild(mothership, zAxis);
 		zAxis++;
-		var numFeatures = 7;
+		var numFeatures = Math.floor(Math.random() * 9 + 1);;
 		var sectionWidth = WIDTH/numFeatures;
 		console.log("section width " + sectionWidth);
 		
@@ -71,7 +71,7 @@ game.PlayScreen = me.ScreenObject.extend({
 			console.log(xPosition);
 
 			me.game.world.addChild(featureShip, zAxis++);
-			var numStories = Math.floor(Math.random() * 9 + 1);
+			var numStories = Math.floor(Math.random() * 12 + 1);
 			var storiesPerLine = Math.floor(sectionWidth / STORY_SHIP.width);
 			var lines = Math.floor(numStories / storiesPerLine) + 1;
 			for (var j = 0; j < numStories; j++) {
