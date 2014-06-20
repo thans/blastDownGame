@@ -54,7 +54,6 @@ game.PlayScreen = me.ScreenObject.extend({
 		zAxis++;
 		var numFeatures = Math.floor(Math.random() * 9 + 1);
 		var sectionWidth = WIDTH/numFeatures;
-		console.log("section width " + sectionWidth);
 		
 		for (var i = 0; i < numFeatures; i++) {
 			var xPosition = (i * sectionWidth) + ((sectionWidth) / 2) - (FEATURE_SHIP.width / 2);
@@ -68,40 +67,21 @@ game.PlayScreen = me.ScreenObject.extend({
 				width: FEATURE_SHIP.width,
 				z: zAxis
 			});
-			console.log(xPosition);
 
 			me.game.world.addChild(featureShip, zAxis++);
 			var numStories = Math.floor(Math.random() * 12 + 1);
 			var storiesPerLine = Math.floor(sectionWidth / STORY_SHIP.width);
-			var lines = Math.floor(numStories / storiesPerLine) + 1;
+			var storyLines = Math.floor(numStories / storiesPerLine) + 1;
+
 			for (var j = 0; j < numStories; j++) {
 				var storyX, storyY;
 				var storiesOnThisLine = storiesPerLine;
-				if (Math.floor(j / storiesPerLine + 1) == lines) {
+				if (Math.floor(j / storiesPerLine + 1) == storyLines) {
 					storiesOnThisLine = numStories % storiesPerLine;
 				}
-				console.log(storiesOnThisLine);
 				storyY = 32 + 160 + 64 + 32 + Math.floor(j / storiesPerLine) * (STORY_SHIP.height);
 				storyX = (i * sectionWidth) + (j % storiesPerLine) * ((sectionWidth) / (storiesOnThisLine + 1)) + sectionWidth / (storiesOnThisLine + 1) - (STORY_SHIP.width / 2);
-				//storyX = (i * sectionWidth) + (j % storiesPerLine) * ((sectionWidth) / (numStories + 1)) + sectionWidth / (numStories + 1) - (STORY_SHIP.width / 2);
-				/*
-				if ((j - 1) + storiesPerLine > numStories && numStories % storiesPerLine != 0) {
-					// fewer than storiesPerLine ships on this line
-					
-					storyX = (i * sectionWidth) + (j % storiesPerLine) * (sectionWidth / (numStories % storiesPerLine + 1)) - STORY_SHIP.width;
-					console.log('sectionWidth', sectionWidth);
-					console.log('storyX', storyX);
-					console.log('left edge', (i*sectionWidth));
-				} else {
-					storyX = (i * sectionWidth) + ((j % storiesPerLine) * STORY_SHIP.width);
-				}
-				*/
-				
-				// if (sectionWidth < numStories * STORY_SHIP.width) {
-				// 	// going to have to spread out vertically as well
 
-				// }
-				// (j * sectionWidth) + ((sectionWidth - STORY_SHIP.width) / 2), 32 + 160 + 64 + 32
 				var storyShip = me.pool.pull("enemyShip", storyX, storyY, {
 					height: STORY_SHIP.height,
 					image: "medium",
@@ -114,7 +94,45 @@ game.PlayScreen = me.ScreenObject.extend({
 				});
 
 				me.game.world.addChild(storyShip, zAxis++);
+
+				// add the tasks together
 			}
+
+			// for proper task vertical alignment
+			if (numStories % storiesPerLine == 0) {
+				storyLines -= 1;
+			}
+
+			// Add all tasks below stories
+			var numTasks = Math.floor(Math.random() * numStories * 3 + 1);
+			var tasksPerLine = Math.floor(sectionWidth / TASK_SHIP.width);
+			var taskLines = Math.floor(numTasks / tasksPerLine) + 1;
+
+			for (var k = 0; k < numTasks; k++) {
+				var taskX, taskY;
+				var tasksOnThisLine = tasksPerLine;
+				if (Math.floor(k / tasksPerLine + 1) == taskLines) {
+					tasksOnThisLine = numTasks % tasksPerLine;
+				}
+				taskY = storyLines * STORY_SHIP.height + 32 + 160 + 64 + 32 + Math.floor(k / tasksPerLine) * (TASK_SHIP.height);
+				taskX = (i * sectionWidth) + (k % tasksPerLine) * ((sectionWidth) / (tasksOnThisLine + 1)) + sectionWidth / (tasksOnThisLine + 1) - (TASK_SHIP.width / 2);
+
+				var taskShip = me.pool.pull("enemyShip", taskX, taskY, {
+					height: TASK_SHIP.height,
+					image: "small",
+					name: "task" + k,
+					spriteheight: TASK_SHIP.height,
+					spritewidth: TASK_SHIP.width,
+					width: TASK_SHIP.width,
+					z: zAxis,
+					health: 2
+				});
+
+				me.game.world.addChild(taskShip, zAxis++);
+
+				// add the tasks together
+			}
+
 		}
 
 		zAxis++;

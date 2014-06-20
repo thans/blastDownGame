@@ -4,8 +4,6 @@ game.PlayerEntity = me.ObjectEntity.extend({
 	init: function(x, y, settings) {
         // call the constructor
         this.parent(x, y, settings);
-        console.log(settings);
-        console.log(this);
         this.gravity = 0.0;
         this.type = game.PLAYER;
         this.movesUntilShoot = 0;
@@ -17,8 +15,10 @@ game.PlayerEntity = me.ObjectEntity.extend({
     // update position
     update: function(dt) {
         if (me.input.isKeyPressed('left')) {
+            //this.flipX(true);
             this.vel.x -= this.accel.x * me.timer.tick;
         } else if (me.input.isKeyPressed('right')) {
+            //this.flipX(false);
             this.vel.x += this.accel.x * me.timer.tick;
         } else {
             this.vel.x = 0;
@@ -27,7 +27,6 @@ game.PlayerEntity = me.ObjectEntity.extend({
 
         if (this.movesUntilShoot < 0 && me.input.isKeyPressed('shoot')) {
             var x = this.shootLeft ? this.pos.x : this.pos.x + 16;
-            console.log(x);
     		var shot = me.pool.pull('bullet', x, this.pos.y, {
                 height: 16,
                 image: "bullet",
