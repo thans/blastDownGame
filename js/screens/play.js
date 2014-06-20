@@ -52,7 +52,7 @@ game.PlayScreen = me.ScreenObject.extend({
 
 		me.game.world.addChild(mothership, zAxis);
 		zAxis++;
-		var numFeatures = Math.floor(Math.random() * 9 + 1);;
+		var numFeatures = Math.floor(Math.random() * 9 + 1);
 		var sectionWidth = WIDTH/numFeatures;
 		console.log("section width " + sectionWidth);
 		
