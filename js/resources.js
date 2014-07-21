@@ -9,10 +9,14 @@ game.resources = [
 	{name: "medium", type: "image", src: "data/img/medium_ship.png"},  // 32x32
 	{name: "small",  type: "image", src: "data/img/small_ship.png"},   // 16x16
 	
-	//bullet
+	// bullet
 	{name: "bullet", type: "image", src: "data/img/bullet_sprite.png"},
 
+  // animations
   {name: "explosion", type:"image", src: "data/img/animations/explosionLarge.png"},
+
+  // font 
+  {name: "font", type: "image", src: "data/font/32x32_font.png"},
 
 	/***********
 	 *   Maps  *

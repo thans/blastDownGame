@@ -32,7 +32,8 @@ game.BulletEntity = me.ObjectEntity.extend({
                     name: "explosion-" + res.obj.name
                 });
                 me.game.world.addChild(explosion, res.obj.z + 1);
-                
+                game.data.score += 1;               
+                console.log(game.data.score);
                 me.game.world.removeChild(res.obj);
             }
         }

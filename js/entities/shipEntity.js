@@ -14,6 +14,19 @@ game.Ship = me.ObjectEntity.extend({
         this.type = game.ENEMY_ENTITY;
     },
 
+    draw: function(context) {
+        context.save();
+        this.parent(context);       
+        context.globalCompositeOperation = "source-in";
+
+        context.fillStyle="green";
+        context.fillRect(this.pos.x, this.pos.y, this.width, this.height);
+
+        context.globalCompositeOperation = "source-over"; // should be unnecessary with the next line, just a sanity check
+        context.restore();
+        
+    },
+
     update: function() {
         // simple movement pattern
     	if (this.numSteps % 3 == 0) {

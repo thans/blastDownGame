@@ -405,7 +405,7 @@ var game = {
 	ENEMY_ENTITY: 99,
 	PLAYER: 88,
 	BULLET: 77,
-	AMMUNITION: 5,
+  EXPLOSION: 66,
 	// an object where to store game information
 	data : {
 		// score
@@ -414,7 +414,7 @@ var game = {
 	
 	
 	// Run on page load.
-	"onload" : function () {
+"onload" : function () {
 		// Initialize the video.
 		if (!me.video.init("screen", 960, 640, true, 'auto')) {
 			alert("Your browser does not support HTML5 canvas.");
@@ -432,7 +432,7 @@ var game = {
 
 		// Initialize the audio.
 		me.audio.init("mp3,ogg");
-
+ 
 		// Set a callback to run when loading is complete.
 		me.loader.onload = this.loaded.bind(this);
 
@@ -451,7 +451,7 @@ var game = {
 		me.pool.register("mainPlayer", game.PlayerEntity);
 		me.pool.register("bullet", game.BulletEntity);
 		me.pool.register("enemyShip", game.Ship);
-
+    me.pool.register("explosion", game.ExplosionEntity);
 		// TODO object POOLING?
 		
 		// TODO temporary enabling keyboard
@@ -474,10 +474,20 @@ game.resources = [
 	{name: "large",  type: "image", src: "data/img/large_ship.png"},   // 64x64
 	{name: "medium", type: "image", src: "data/img/medium_ship.png"},  // 32x32
 	{name: "small",  type: "image", src: "data/img/small_ship.png"},   // 16x16
-
-	//bullet
+	
+	// bullet
 	{name: "bullet", type: "image", src: "data/img/bullet_sprite.png"},
-	{name: "test", type: "image", src: "data/img/test.png"},
+
+  // animations
+  {name: "explosion", type:"image", src: "data/img/animations/explosionLarge.png"},
+
+  // font 
+  {name: "font", type: "image", src: "data/font/32x32_font.png"},
+
+	/***********
+	 *   Maps  *
+	 ***********/
+
 	// background
 	{name: "background", type: "image", src: "data/img/background.png"},
 	
@@ -530,15 +540,19 @@ game.HUD.ScoreItem = me.Renderable.extend({
 	 */
 	init: function(x, y) {
 		
-		// call the parent constructor 
-		// (size does not matter here)
-		this.parent(new me.Vector2d(x, y), 10, 10); 
-		
-		// local copy of the global score
-		this.score = -1;
-
-		// make sure we use screen coordinates
-		this.floating = true;
+        // call the parent constructor 
+        // (size does not matter here)
+        this.parent(new me.Vector2d(x, y), 10, 10); 
+         
+        // create a font
+        this.font = new me.BitmapFont("32x32_font", 32);
+        this.font.set("right");
+         
+        // local copy of the global score
+        this.score = -1;
+ 
+        // make sure we use screen coordinates
+        this.floating = true;
 	},
 
 	/**
@@ -558,7 +572,7 @@ game.HUD.ScoreItem = me.Renderable.extend({
 	 * draw the score
 	 */
 	draw : function (context) {
-		// draw it baby !
+		this.font.draw (context, game.data.score, this.pos.x, this.pos.y);
 	}
 
 });
@@ -579,7 +593,6 @@ game.BulletEntity = me.ObjectEntity.extend({
         // did we hit the top wall?
         if (this.pos.y < 16) {
             me.game.world.removeChild(this);
-            game.AMMUNITION++;
         }
 
         // did we hit an enemy?
@@ -587,8 +600,19 @@ game.BulletEntity = me.ObjectEntity.extend({
         if (res) {
             if (res.obj.type == game.ENEMY_ENTITY) {
                 me.game.world.removeChild(this);
+                
+                console.log(res.obj);
+                var explosion = me.pool.pull("explosion", res.obj.pos.x, res.obj.pos.y, {
+                    image: "explosion",
+                    width: 32,
+                    height: 32,
+                    spritewidth: 32,
+                    spriteheight: 32,
+                    name: "explosion-" + res.obj.name
+                });
+                me.game.world.addChild(explosion, res.obj.z + 1);
+                game.data.score += 1;                
                 me.game.world.removeChild(res.obj);
-                game.AMMUNITION++;
             }
         }
 
@@ -598,34 +622,59 @@ game.BulletEntity = me.ObjectEntity.extend({
         return true;
       }
 });
+
+game.ExplosionEntity = me.ObjectEntity.extend({
+
+	init: function(x, y, settings) {
+        // call the constructor
+        this.parent(x, y, settings);
+        this.gravity = 0.0;
+        // set the movement speed
+        this.setVelocity(0, 0);
+
+        this.numSteps = 0;
+        this.collidable = false;
+        this.type = game.EXPLOSION;
+    },
+
+    update: function() {
+      this.numSteps++;
+      if (this.numSteps > 3) {
+          me.game.world.removeChild(this);
+      }
+    }
+});
+
 game.PlayerEntity = me.ObjectEntity.extend({
 
 	// constructor
 	init: function(x, y, settings) {
         // call the constructor
         this.parent(x, y, settings);
-        console.log(settings);
-        console.log(this);
         this.gravity = 0.0;
         this.type = game.PLAYER;
         this.movesUntilShoot = 0;
         // set the default horizontal & vertical speed (accel vector)
         this.setVelocity(5, 0);
+        this.shootLeft = false;
     },
 
     // update position
     update: function(dt) {
         if (me.input.isKeyPressed('left')) {
+            //this.flipX(true);
             this.vel.x -= this.accel.x * me.timer.tick;
         } else if (me.input.isKeyPressed('right')) {
+            //this.flipX(false);
             this.vel.x += this.accel.x * me.timer.tick;
         } else {
             this.vel.x = 0;
         }
         this.movesUntilShoot--;
 
-        if (this.movesUntilShoot < 0 && me.input.isKeyPressed('shoot') && game.AMMUNITION > 0) {
-    		var shot = me.pool.pull('bullet', this.pos.x, this.pos.y, {
+        if (this.movesUntilShoot < 0 && me.input.isKeyPressed('shoot')) {
+            var x = this.shootLeft ? this.pos.x : this.pos.x + 16;
+    		var shot = me.pool.pull('bullet', x, this.pos.y, {
                 height: 16,
                 image: "bullet",
                 name: "shot",
@@ -633,9 +682,8 @@ game.PlayerEntity = me.ObjectEntity.extend({
                 spritewidth: 16,
                 width: 16
             });
-            game.AMMUNITION--;
-            this.movesUntilShoot = 5; // 5 updates befre you can shoot again
-
+            this.movesUntilShoot = 15; // 10 updates befre you can shoot again
+            this.shootLeft = !this.shootLeft;
             me.game.world.addChild(shot, Number.POSITIVE_INFINITY);
     	}
 
@@ -685,6 +733,7 @@ game.Ship = me.ObjectEntity.extend({
     	this.numSteps++;
     }
 });
+
 game.PlayScreen = me.ScreenObject.extend({
 	/**
 	 *  action to perform on state change
@@ -727,7 +776,7 @@ game.PlayScreen = me.ScreenObject.extend({
 		/*
 		 * Draw the Mothership
 		 */
-		var mothership = me.pool.pull("enemyShip", 320 - PADDING, 32, {
+		var mothership = me.pool.pull("enemyShip", WIDTH / 2 - MOTHERSHIP.width / 2, 32, {
 			height: MOTHERSHIP.height,
 			image: "xlarge",
 			name: "mothership",
@@ -739,12 +788,11 @@ game.PlayScreen = me.ScreenObject.extend({
 
 		me.game.world.addChild(mothership, zAxis);
 		zAxis++;
-		var numFeatures = 6;
+		var numFeatures = Math.floor(Math.random() * 9 + 1);
 		var sectionWidth = WIDTH/numFeatures;
-		console.log("section width " + sectionWidth);
 		
 		for (var i = 0; i < numFeatures; i++) {
-			var xPosition = (i * sectionWidth) + ((sectionWidth - FEATURE_SHIP.width) / 2);
+			var xPosition = (i * sectionWidth) + ((sectionWidth) / 2) - (FEATURE_SHIP.width / 2);
 			var yPosition = 32 + 160;
 			var featureShip = me.pool.pull("enemyShip", xPosition, yPosition, {
 				height: FEATURE_SHIP.height,
@@ -757,19 +805,19 @@ game.PlayScreen = me.ScreenObject.extend({
 			});
 
 			me.game.world.addChild(featureShip, zAxis++);
-			var numStories = Math.floor(Math.random() * 7 + 1);
-			var storySectionWidth = Math.floor(sectionWidth / numStories);
+			var numStories = Math.floor(Math.random() * 12 + 1);
+			var storiesPerLine = Math.floor(sectionWidth / STORY_SHIP.width);
+			var storyLines = Math.floor(numStories / storiesPerLine) + 1;
 
 			for (var j = 0; j < numStories; j++) {
 				var storyX, storyY;
-				var storiesPerLine = Math.floor(sectionWidth / STORY_SHIP.width);
+				var storiesOnThisLine = storiesPerLine;
+				if (Math.floor(j / storiesPerLine + 1) == storyLines) {
+					storiesOnThisLine = numStories % storiesPerLine;
+				}
 				storyY = 32 + 160 + 64 + 32 + Math.floor(j / storiesPerLine) * (STORY_SHIP.height);
-				storyX = (i * sectionWidth) + ((j % storiesPerLine) * STORY_SHIP.width - (STORY_SHIP.WIDTH / 2));
-				// if (sectionWidth < numStories * STORY_SHIP.width) {
-				// 	// going to have to spread out vertically as well
+				storyX = (i * sectionWidth) + (j % storiesPerLine) * ((sectionWidth) / (storiesOnThisLine + 1)) + sectionWidth / (storiesOnThisLine + 1) - (STORY_SHIP.width / 2);
 
-				// }
-				// (j * sectionWidth) + ((sectionWidth - STORY_SHIP.width) / 2), 32 + 160 + 64 + 32
 				var storyShip = me.pool.pull("enemyShip", storyX, storyY, {
 					height: STORY_SHIP.height,
 					image: "medium",
@@ -782,7 +830,45 @@ game.PlayScreen = me.ScreenObject.extend({
 				});
 
 				me.game.world.addChild(storyShip, zAxis++);
+
+				// add the tasks together
 			}
+
+			// for proper task vertical alignment
+			if (numStories % storiesPerLine == 0) {
+				storyLines -= 1;
+			}
+
+			// Add all tasks below stories
+			var numTasks = Math.floor(Math.random() * numStories * 3 + 1);
+			var tasksPerLine = Math.floor(sectionWidth / TASK_SHIP.width);
+			var taskLines = Math.floor(numTasks / tasksPerLine) + 1;
+
+			for (var k = 0; k < numTasks; k++) {
+				var taskX, taskY;
+				var tasksOnThisLine = tasksPerLine;
+				if (Math.floor(k / tasksPerLine + 1) == taskLines) {
+					tasksOnThisLine = numTasks % tasksPerLine;
+				}
+				taskY = storyLines * STORY_SHIP.height + 32 + 160 + 64 + 32 + Math.floor(k / tasksPerLine) * (TASK_SHIP.height);
+				taskX = (i * sectionWidth) + (k % tasksPerLine) * ((sectionWidth) / (tasksOnThisLine + 1)) + sectionWidth / (tasksOnThisLine + 1) - (TASK_SHIP.width / 2);
+
+				var taskShip = me.pool.pull("enemyShip", taskX, taskY, {
+					height: TASK_SHIP.height,
+					image: "small",
+					name: "task" + k,
+					spriteheight: TASK_SHIP.height,
+					spritewidth: TASK_SHIP.width,
+					width: TASK_SHIP.width,
+					z: zAxis,
+					health: 2
+				});
+
+				me.game.world.addChild(taskShip, zAxis++);
+
+				// add the tasks together
+			}
+
 		}
 
 		zAxis++;
